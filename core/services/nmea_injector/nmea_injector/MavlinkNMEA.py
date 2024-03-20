@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from nmea_injector.exceptions import UnsupportedSentenceType
 
 
-class GPS_FIX_TYPE(IntEnum):
+class MAVLINK_GPS_FIX_TYPE(IntEnum):
     GPS_FIX_TYPE_NO_GPS = 0
     GPS_FIX_TYPE_NO_FIX = 1
     GPS_FIX_TYPE_2D_FIX = 2
@@ -19,7 +19,7 @@ class GPS_FIX_TYPE(IntEnum):
     GPS_FIX_TYPE_PPP = 8
 
 
-class GPS_INPUT_IGNORE_FLAG(IntFlag):
+class MAVLINK_GPS_INPUT_IGNORE_FLAG(IntFlag):
     GPS_INPUT_IGNORE_FLAG_ALT = 1
     GPS_INPUT_IGNORE_FLAG_HDOP = 2
     GPS_INPUT_IGNORE_FLAG_VDOP = 4
@@ -35,9 +35,9 @@ class Mavlink2RestBitEnum(BaseModel):
 
 
 nmea_ignore_flags = (
-    GPS_INPUT_IGNORE_FLAG.GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY
-    | GPS_INPUT_IGNORE_FLAG.GPS_INPUT_IGNORE_FLAG_VEL_VERT
-    | GPS_INPUT_IGNORE_FLAG.GPS_INPUT_IGNORE_FLAG_VEL_HORIZ
+    MAVLINK_GPS_INPUT_IGNORE_FLAG.GPS_INPUT_IGNORE_FLAG_SPEED_ACCURACY
+    | MAVLINK_GPS_INPUT_IGNORE_FLAG.GPS_INPUT_IGNORE_FLAG_VEL_VERT
+    | MAVLINK_GPS_INPUT_IGNORE_FLAG.GPS_INPUT_IGNORE_FLAG_VEL_HORIZ
 )
 
 
@@ -65,6 +65,18 @@ class MavlinkGpsInput(BaseModel):
     satellites_visible: Optional[int] = 0
     yaw: Optional[int] = 0
 
+def map_gps_qual_to_mavlink_gps_fix_type(gps_qual_value: int) -> int:
+    """Map pynmea2 GPS quality value to mavlink GPS fix types."""
+    gps_qual_mapping = {
+        0: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_NO_FIX.value,
+        1: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_3D_FIX.value,
+        2: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_DGPS.value,
+        3: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_NO_GPS.value,
+        4: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_RTK_FIXED.value,
+        5: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_RTK_FLOAT.value,
+        6: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_NO_FIX.value,
+    }
+    return gps_qual_mapping.get(gps_qual_value, MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_NO_GPS.value)
 
 def parse_mavlink_from_sentence(msg: pynmea2.NMEASentence) -> MavlinkGpsInput:
     data: Dict[str, Any] = {}
@@ -81,7 +93,7 @@ def parse_mavlink_from_sentence(msg: pynmea2.NMEASentence) -> MavlinkGpsInput:
         data["hdop"] = float(msg.horizontal_dil)
         data["alt"] = float(msg.altitude)
         data["satellites_visible"] = int(msg.num_sats)
-        data["fix_type"] = int(msg.gps_qual)
+        data["fix_type"] = map_gps_qual_to_mavlink_gps_fix_type(int(msg.gps_qual))
     elif msg.sentence_type == "GNS":
         data["hdop"] = float(msg.hdop)
         data["satellites_visible"] = int(msg.num_sats)
