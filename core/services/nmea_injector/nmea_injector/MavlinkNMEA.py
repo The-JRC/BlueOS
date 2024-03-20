@@ -47,7 +47,9 @@ class MavlinkGpsInput(BaseModel):
     type: str = "GPS_INPUT"
     time_usec: Optional[int] = 0
     gps_id: Optional[int] = 0
-    ignore_flags: Optional[Mavlink2RestBitEnum] = Mavlink2RestBitEnum(bits=nmea_ignore_flags.value)
+    ignore_flags: Optional[Mavlink2RestBitEnum] = Mavlink2RestBitEnum(
+        bits=nmea_ignore_flags.value
+    )
     time_week_ms: Optional[int] = 0
     time_week: Optional[int] = 0
     fix_type: Optional[int] = 0
@@ -65,6 +67,7 @@ class MavlinkGpsInput(BaseModel):
     satellites_visible: Optional[int] = 0
     yaw: Optional[int] = 0
 
+
 def map_gps_qual_to_mavlink_gps_fix_type(gps_qual_value: int) -> int:
     """Map pynmea2 GPS quality value to mavlink GPS fix types."""
     gps_qual_mapping = {
@@ -76,14 +79,19 @@ def map_gps_qual_to_mavlink_gps_fix_type(gps_qual_value: int) -> int:
         5: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_RTK_FLOAT.value,
         6: MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_NO_FIX.value,
     }
-    return gps_qual_mapping.get(gps_qual_value, MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_NO_GPS.value)
+    return gps_qual_mapping.get(
+        gps_qual_value, MAVLINK_GPS_FIX_TYPE.GPS_FIX_TYPE_NO_GPS.value
+    )
+
 
 def parse_mavlink_from_sentence(msg: pynmea2.NMEASentence) -> MavlinkGpsInput:
     data: Dict[str, Any] = {}
 
     supported_sentence_types = ["GGA", "RMC", "GLL", "GNS"]
     if msg.sentence_type not in supported_sentence_types:
-        raise UnsupportedSentenceType(f"Supported types are {supported_sentence_types}. Received {msg.sentence_type}")
+        raise UnsupportedSentenceType(
+            f"Supported types are {supported_sentence_types}. Received {msg.sentence_type}"
+        )
 
     # Convert NMEA lat/long data from "float degrees" to "int degrees ^7"
     data["lat"] = int(msg.latitude * 1e7)
