@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from nmea_injector.exceptions import UnsupportedSentenceType
 
+
 class MAVLINK_GPS_FIX_TYPE(IntEnum):
     GPS_FIX_TYPE_NO_GPS = 0
     GPS_FIX_TYPE_NO_FIX = 1
